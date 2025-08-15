@@ -5,9 +5,7 @@ export function useRoom(roomId) {
   const [members, setMembers] = useState([])      // [{id, name, vote, role}]
   const [revealed, setRevealed] = useState(false)
   const [settings, setSettings] = useState({ deck: 'FIB' })
-  const channelRef = useRef(null)
-
-  const me = useMemo(() => {
+  const [me, setMe] = useState(() => {
     const stored = JSON.parse(localStorage.getItem('pp_user') || 'null')
     if (stored) return stored
     // first tab joining a room becomes host; others are members.
@@ -15,7 +13,8 @@ export function useRoom(roomId) {
     const user = { id: crypto.randomUUID(), name: `Guest-${Math.floor(Math.random()*1000)}`, role: 'member' }
     localStorage.setItem('pp_user', JSON.stringify(user))
     return user
-  }, [])
+  })
+  const channelRef = useRef(null)
 
   useEffect(() => {
     const channel = supabase.channel(`room:${roomId}`, {
@@ -26,13 +25,16 @@ export function useRoom(roomId) {
     channel.on('presence', { event: 'sync' }, () => {
       const state = channel.presenceState()
       const list = Object.values(state).flat()
-      setMembers(list)
+      // Filter out current user from members list to avoid duplication
+      const otherMembers = list.filter(m => m.id !== me.id)
+      setMembers(otherMembers)
       // Elect host = first lexicographic user id (deterministic, no server)
       const sorted = [...list].sort((a,b) => (a.id < b.id ? -1 : 1))
       const hostId = sorted[0]?.id
       if (hostId && me.id === hostId && me.role !== 'host') {
-        // upgrade to host
-        track({ ...me, role: 'host' })
+        // upgrade to host - preserve current name and vote
+        const currentMe = list.find(m => m.id === me.id) || me
+        track({ ...currentMe, role: 'host' })
       }
     })
 
@@ -61,6 +63,7 @@ export function useRoom(roomId) {
     ch.track(payload)
     // Optimistic local update for "me"
     if (payload.id === me.id) {
+      setMe(payload)
       localStorage.setItem('pp_user', JSON.stringify({ id: payload.id, name: payload.name, role: payload.role }))
     }
   }
@@ -75,6 +78,7 @@ export function useRoom(roomId) {
     const ch = channelRef.current
     if (!ch) return
     const updatedMe = { ...me, name: newName }
+    setMe(updatedMe)
     ch.track(updatedMe)
     // Update local storage
     localStorage.setItem('pp_user', JSON.stringify({ id: updatedMe.id, name: updatedMe.name, role: updatedMe.role }))
