@@ -8,13 +8,19 @@ const TSHIRT = ['XS','S','M','L','XL','?']
 export default function Room() {
   const { roomId } = useParams()
   const nav = useNavigate()
-  const { me, members, revealed, vote, reveal, reset, broadcastSettings, settings } = useRoom(roomId)
+  const { me, members, revealed, vote, reveal, reset, broadcastSettings, settings, setName } = useRoom(roomId)
   const [deck, setDeck] = React.useState('FIB')
+  const [editingName, setEditingName] = React.useState(false)
+  const [tempName, setTempName] = React.useState(me.name)
 
   React.useEffect(() => {
     // sync deck via broadcast settings if host changes it
     if (settings?.deck && settings.deck !== deck) setDeck(settings.deck)
   }, [settings, deck])
+
+  React.useEffect(() => {
+    setTempName(me.name)
+  }, [me.name])
 
   const deckValues = deck === 'FIB' ? FIB : TSHIRT
 
@@ -29,6 +35,18 @@ export default function Room() {
     broadcastSettings({ deck: next })
   }
 
+  const handleNameSave = () => {
+    if (tempName.trim()) {
+      setName(tempName.trim())
+      setEditingName(false)
+    }
+  }
+
+  const handleNameCancel = () => {
+    setTempName(me.name)
+    setEditingName(false)
+  }
+
   return (
     <div className="mx-auto max-w-4xl p-4 space-y-6">
       <header className="flex items-center justify-between gap-2">
@@ -37,7 +55,46 @@ export default function Room() {
           <h1 className="text-xl font-bold">Room {roomId}</h1>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-500">You: {me.name}{isHost ? ' (host)' : ''}</span>
+          {editingName ? (
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={tempName}
+                onChange={(e) => setTempName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleNameSave()
+                  if (e.key === 'Escape') handleNameCancel()
+                }}
+                className="px-2 py-1 text-sm border rounded"
+                placeholder="Enter your name"
+                autoFocus
+              />
+              <button 
+                onClick={handleNameSave}
+                className="px-2 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600"
+              >
+                Save
+              </button>
+              <button 
+                onClick={handleNameCancel}
+                className="px-2 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-500">
+                You: <button 
+                  onClick={() => setEditingName(true)}
+                  className="hover:underline font-medium"
+                >
+                  {me.name}
+                </button>
+                {isHost ? ' (host)' : ''}
+              </span>
+            </div>
+          )}
           <button className="px-3 py-2 rounded-lg border" onClick={copy}>Copy link</button>
           <button
             className="px-3 py-2 rounded-lg border"
@@ -54,10 +111,17 @@ export default function Room() {
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
         {members.map((m) => (
           <div key={m.id} className={`rounded-xl border p-3 text-center bg-white ${m.id===me.id?'border-blue-400':''}`}>
-            <div className="text-xs opacity-70 truncate">{m.name}</div>
+            <div className={`font-medium truncate ${revealed ? 'text-sm' : 'text-xs opacity-70'}`}>
+              {m.name}
+            </div>
             <div className="mt-2 text-3xl font-semibold">
               {revealed ? (m.vote ?? '—') : (m.vote == null ? '—' : '•')}
             </div>
+            {revealed && m.vote != null && (
+              <div className="text-xs text-gray-500 mt-1">
+                voted {m.vote}
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -92,7 +156,9 @@ export default function Room() {
       </div>
 
       <footer className="pt-8 text-center text-xs text-gray-500">
-        Built with Supabase Realtime • No login • Share the link to invite
+        <div className="mb-2">
+          💡 Click your name to edit it • Built with Supabase Realtime • No login • Share the link to invite
+        </div>
       </footer>
     </div>
   )

@@ -71,9 +71,18 @@ export function useRoom(roomId) {
     ch.track({ ...me, vote: value })
   }
 
+  const setName = (newName) => {
+    const ch = channelRef.current
+    if (!ch) return
+    const updatedMe = { ...me, name: newName }
+    ch.track(updatedMe)
+    // Update local storage
+    localStorage.setItem('pp_user', JSON.stringify({ id: updatedMe.id, name: updatedMe.name, role: updatedMe.role }))
+  }
+
   const reveal = () => channelRef.current?.send({ type: 'broadcast', event: 'REVEAL', payload: {} })
   const reset  = () => channelRef.current?.send({ type: 'broadcast', event: 'RESET',  payload: {} })
   const broadcastSettings = (partial) => channelRef.current?.send({ type: 'broadcast', event: 'SETTINGS', payload: partial })
 
-  return { me, members, revealed, vote, reveal, reset, broadcastSettings, settings }
+  return { me, members, revealed, vote, reveal, reset, broadcastSettings, settings, setName }
 }
