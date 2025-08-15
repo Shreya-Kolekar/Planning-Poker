@@ -31,9 +31,8 @@ export function useRoom(roomId) {
       const sorted = [...list].sort((a,b) => (a.id < b.id ? -1 : 1))
       const hostId = sorted[0]?.id
       if (hostId && me.id === hostId && me.role !== 'host') {
-        // upgrade to host - preserve current name and vote
-        const currentMe = list.find(m => m.id === me.id) || me
-        track({ ...currentMe, role: 'host' })
+        // upgrade to host
+        track({ ...me, role: 'host' })
       }
     })
 
