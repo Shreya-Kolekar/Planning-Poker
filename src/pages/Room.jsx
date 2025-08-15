@@ -109,8 +109,24 @@ export default function Room() {
 
       {/* Members */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+        {/* Current user card */}
+        <div className="rounded-xl border p-3 text-center bg-white border-blue-400">
+          <div className={`font-medium truncate ${revealed ? 'text-sm' : 'text-xs opacity-70'}`}>
+            {me.name}
+          </div>
+          <div className="mt-2 text-3xl font-semibold">
+            {revealed ? (me.vote ?? '—') : '—'}
+          </div>
+          {revealed && me.vote != null && (
+            <div className="text-xs text-gray-500 mt-1">
+              voted {me.vote}
+            </div>
+          )}
+        </div>
+        
+        {/* Other members */}
         {members.map((m) => (
-          <div key={m.id} className={`rounded-xl border p-3 text-center bg-white ${m.id===me.id?'border-blue-400':''}`}>
+          <div key={m.id} className="rounded-xl border p-3 text-center bg-white">
             <div className={`font-medium truncate ${revealed ? 'text-sm' : 'text-xs opacity-70'}`}>
               {m.name}
             </div>
