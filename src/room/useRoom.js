@@ -33,8 +33,10 @@ export function useRoom(roomId) {
       const hostId = sorted[0]?.id
       if (hostId && me.id === hostId && me.role !== 'host') {
         // upgrade to host - preserve current name and vote
-        const currentMe = list.find(m => m.id === me.id) || me
-        track({ ...currentMe, role: 'host' })
+        track({ ...me, role: 'host' })
+      } else if (hostId && me.id !== hostId && me.role === 'host') {
+        // downgrade to member if not host
+        track({ ...me, role: 'member' })
       }
     })
 
@@ -71,7 +73,9 @@ export function useRoom(roomId) {
   const vote = (value) => {
     const ch = channelRef.current
     if (!ch) return
-    ch.track({ ...me, vote: value })
+    const updatedMe = { ...me, vote: value }
+    setMe(updatedMe)
+    ch.track(updatedMe)
   }
 
   const setName = (newName) => {

@@ -115,7 +115,7 @@ export default function Room() {
             {me.name}
           </div>
           <div className="mt-2 text-3xl font-semibold">
-            {revealed ? (me.vote ?? '—') : (me.vote == null ? '—' : '•')}
+            {revealed ? (me.vote ?? '—') : '—'}
           </div>
           {revealed && me.vote != null && (
             <div className="text-xs text-gray-500 mt-1">
